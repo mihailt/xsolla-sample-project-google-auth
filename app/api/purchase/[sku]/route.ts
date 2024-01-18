@@ -10,9 +10,15 @@ export async function GET(request: Request, ctx: { params: { sku: string;} }) {
 
     const session = await getServerSession(XsollaAuthOptions);
 
-    const resp = await XsollaApi.createOrder({projectId: process.env.NEXT_PUBLIC_XSOLLA_PROJECT_ID!, apiKey: process.env.XSOLLA_MERCHANT_API_KEY!, sku: ctx.params.sku, sandbox: true, email: session!.user.email!, userId: session!.user.id})
+    const user = await prisma.user.findFirst({
+      where: {
+        email: session!.user.email!
+      }
+    });
+
+    const resp = await XsollaApi.createOrder({projectId: process.env.NEXT_PUBLIC_XSOLLA_PROJECT_ID!, apiKey: process.env.XSOLLA_MERCHANT_API_KEY!, sku: ctx.params.sku, sandbox: true, email: user!.email!, userId: user!.id!})
     const {token, order_id} = resp;
-    console.log(resp)
+
     const order = await XsollaApi.fetchOrder({projectId: process.env.NEXT_PUBLIC_XSOLLA_PROJECT_ID!, orderId: order_id!, token: token})
 
     const stored = await prisma.order.create({
